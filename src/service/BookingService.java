@@ -52,4 +52,24 @@ public class BookingService {
     public List<Seat> getBookedSeats(Show show) {
         return getAllBookings(show).stream().filter(Booking::isConfirmed).map(Booking::getSeatsBooked).flatMap(Collection::stream).collect(Collectors.toList());
     }
+
+    public void confirmBooking(Booking booking, User user) throws Exception {
+        if(!booking.getUser().equals(user)) {
+            throw new Exception("Cannot confirm a booking made by another user");
+        }
+        for(Seat seat : booking.getSeatsBooked()) {
+            if(!seatLockProvider.validateLock(booking.getShow(), seat, user)) {
+                throw new Exception("Acquired Lock is either invalid or has expired");
+            }
+        }
+        booking.confirmBooking();
+    }
+
+    public boolean isAnySeatAlreadyBooked(Show show, List<Seat> seats) {
+        List<Seat> bookedSeats = getBookedSeats(show);
+        for(Seat seat : bookedSeats) {
+            if(bookedSeats.contains(seat)) return true;
+        }
+        return false;
+    }
 }
